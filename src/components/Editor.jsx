@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAppContext } from '../context/AppContext';
-import { ArrowLeft, Trash2, Plus, RefreshCw, Sparkles, Loader2 } from 'lucide-react';
+import { ArrowLeft, Trash2, Plus, RefreshCw, Sparkles, Loader2, Download, Upload } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { IconRenderer } from './IconRenderer';
 import { GoogleGenAI } from '@google/genai';
@@ -11,6 +11,48 @@ export function Editor() {
   const [newQuestionText, setNewQuestionText] = useState('');
   const [newCatName, setNewCatName] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const fileInputRef = useRef(null);
+
+  const handleExport = () => {
+    const dataStr = JSON.stringify(categories, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'deeptalk-data.json';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImport = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const parsedData = JSON.parse(event.target.result);
+        if (Array.isArray(parsedData) && window.confirm('Импортировать категории? Текущие данные будут перезаписаны.')) {
+          setCategories(parsedData);
+          if (parsedData.length > 0) {
+            setActiveTab(parsedData[0].id);
+          }
+        } else if (!Array.isArray(parsedData)) {
+           alert('Неверный формат файла: ожидается массив категорий.');
+        }
+      } catch (error) {
+        console.error('Ошибка при импорте:', error);
+        alert('Не удалось прочитать файл. Убедитесь, что это корректный JSON.');
+      }
+    };
+    reader.readAsText(file);
+    // Сбросить значение input, чтобы можно было загрузить тот же файл снова
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   const handleGenerateAIQuestions = async () => {
     if (!activeCategory) return;
@@ -119,30 +161,53 @@ export function Editor() {
         <div className="flex items-center gap-4">
           <button 
             onClick={() => setCurrentView('home')}
-            className="p-3 text-stone-400 hover:text-stone-800 hover:bg-stone-200 rounded-full transition-colors bg-white shadow-sm sm:bg-transparent sm:shadow-none"
+            className="p-3 text-stone-600 hover:text-stone-900 hover:bg-white/50 rounded-full transition-colors bg-white/30 backdrop-blur-sm shadow-sm"
           >
             <ArrowLeft size={24} />
           </button>
           <h1 className="text-2xl font-bold text-stone-800">Редактор контента</h1>
         </div>
         
-        <button 
-          onClick={() => {
-            if (window.confirm("Сбросить все настройки и вернуть стандартные вопросы? Ваши добавленные вопросы будут удалены.")) {
-              resetToDefault();
-            }
-          }}
-          className="flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-stone-200 text-stone-700 rounded-xl hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-colors text-sm font-medium shadow-sm"
-        >
-          <RefreshCw size={16} />
-          Сброс к заводским
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button 
+            onClick={() => fileInputRef.current?.click()}
+            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-white/80 backdrop-blur-md border border-white/40 text-stone-800 rounded-xl hover:bg-white hover:shadow-sm transition-all text-sm font-medium shadow-sm"
+          >
+            <Upload size={16} />
+            <span className="hidden sm:inline">Импорт</span>
+          </button>
+          <button 
+            onClick={handleExport}
+            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-white/80 backdrop-blur-md border border-white/40 text-stone-800 rounded-xl hover:bg-white hover:shadow-sm transition-all text-sm font-medium shadow-sm"
+          >
+            <Download size={16} />
+            <span className="hidden sm:inline">Экспорт</span>
+          </button>
+          <button 
+            onClick={() => {
+              if (window.confirm("Сбросить все настройки и вернуть стандартные вопросы? Ваши добавленные вопросы будут удалены.")) {
+                resetToDefault();
+              }
+            }}
+            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-white/80 backdrop-blur-md border border-white/40 text-stone-800 rounded-xl hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-all text-sm font-medium shadow-sm"
+          >
+            <RefreshCw size={16} />
+            <span className="hidden sm:inline">Сброс к заводским</span>
+          </button>
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleImport} 
+            accept=".json" 
+            className="hidden" 
+          />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Sidebar */}
         <div className="lg:col-span-1 space-y-2 order-2 lg:order-1">
-          <div className="bg-white rounded-3xl p-4 shadow-sm border border-stone-100">
+          <div className="bg-white/80 backdrop-blur-md rounded-3xl p-4 shadow-sm border border-white/40">
             <h3 className="text-xs font-bold text-stone-400 uppercase tracking-wider mb-3 px-2">Категории</h3>
             <div className="space-y-1">
               {categories.map(cat => (
@@ -189,7 +254,7 @@ export function Editor() {
         {/* Main Editor Area */}
         <div className="lg:col-span-3 order-1 lg:order-2">
           {activeCategory ? (
-            <div className="bg-white rounded-3xl p-5 sm:p-8 border border-stone-100 shadow-sm min-h-[500px] flex flex-col">
+            <div className="bg-white/80 backdrop-blur-md rounded-3xl p-5 sm:p-8 border border-white/40 shadow-sm min-h-[500px] flex flex-col">
               <div className="flex justify-between items-center mb-6 pb-4">
                 <div className="flex items-center gap-3">
                   <div className="p-2.5 bg-rose-50 text-rose-500 rounded-xl">
@@ -245,7 +310,7 @@ export function Editor() {
               </div>
 
               {/* Add Question */}
-              <div className="bg-white border border-stone-200 p-2 pl-4 rounded-[1.25rem] flex items-center shadow-sm focus-within:border-stone-400 focus-within:ring-4 focus-within:ring-stone-100 transition-all">
+              <div className="bg-white/60 border border-white/50 p-2 pl-4 rounded-[1.25rem] flex items-center shadow-sm focus-within:border-stone-400 focus-within:ring-4 focus-within:ring-white/50 transition-all">
                 <input 
                   type="text" 
                   value={newQuestionText}
@@ -254,11 +319,11 @@ export function Editor() {
                     if (e.key === 'Enter') handleAddQuestion(activeCategory.id);
                   }}
                   placeholder="Напишите новый вопрос..."
-                  className="flex-1 bg-transparent py-3 outline-none text-stone-700 placeholder:text-stone-400 font-medium"
+                  className="flex-1 bg-transparent py-3 outline-none text-stone-800 placeholder:text-stone-500 font-medium"
                 />
                 <button 
                   onClick={() => handleAddQuestion(activeCategory.id)}
-                  className="px-5 py-3 ml-2 bg-stone-800 text-white rounded-xl hover:bg-stone-700 transition-colors flex items-center justify-center font-medium shrink-0"
+                  className="px-5 py-3 ml-2 bg-stone-800 text-white rounded-xl hover:bg-stone-700 transition-colors flex items-center justify-center font-medium shrink-0 shadow-sm"
                 >
                   <Plus size={20} className="sm:mr-2" />
                   <span className="hidden sm:inline">Добавить</span>
@@ -267,7 +332,7 @@ export function Editor() {
 
             </div>
           ) : (
-            <div className="bg-white rounded-3xl p-6 border border-stone-100 flex flex-col items-center justify-center min-h-[500px] text-stone-400">
+            <div className="bg-white/80 backdrop-blur-md rounded-3xl p-6 border border-white/40 flex flex-col items-center justify-center min-h-[500px] text-stone-500 shadow-sm">
               <IconRenderer name="Inbox" size={48} className="mb-4 opacity-50" />
               <p>Выберите или создайте категорию слева</p>
             </div>

@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
+import { useMultiplayer } from '../context/MultiplayerContext';
 import { ChevronLeft, ChevronRight, Shuffle, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export function Game() {
   const { categories, activeCategoryId, setCurrentView } = useAppContext();
+  const { roomId, sharedState, broadcastState, leaveRoom, isHost, setSharedState } = useMultiplayer();
+  
   const category = categories.find(c => c.id === activeCategoryId);
   
   const [questions, setQuestions] = useState([]);
@@ -12,19 +15,54 @@ export function Game() {
   const [direction, setDirection] = useState(1);
   const [isFlipped, setIsFlipped] = useState(false);
 
+  // Initialize questions
   useEffect(() => {
-    if (category && category.questions) {
+    if (roomId && sharedState?.type === 'START_GAME') {
+      setQuestions(sharedState.questions || []);
+      setCurrentIndex(sharedState.currentIndex || 0);
+      setIsFlipped(sharedState.isFlipped || false);
+    } else if (!roomId && category && category.questions) {
       setQuestions([...category.questions]);
       setCurrentIndex(0);
     }
-  }, [category]);
+  }, [category, roomId, sharedState?.type]);
 
-  if (!category || questions.length === 0) {
+  // Sync state from remote
+  useEffect(() => {
+    if (roomId && sharedState?.type === 'SYNC') {
+      if (sharedState.questions) setQuestions(sharedState.questions);
+      if (sharedState.currentIndex !== undefined) setCurrentIndex(sharedState.currentIndex);
+      if (sharedState.isFlipped !== undefined) setIsFlipped(sharedState.isFlipped);
+      if (sharedState.direction !== undefined) setDirection(sharedState.direction);
+    }
+  }, [roomId, sharedState]);
+
+  const syncState = (newState) => {
+    if (roomId) {
+      const stateUpdate = {
+        type: 'SYNC',
+        currentIndex: newState.currentIndex !== undefined ? newState.currentIndex : currentIndex,
+        isFlipped: newState.isFlipped !== undefined ? newState.isFlipped : isFlipped,
+        direction: newState.direction !== undefined ? newState.direction : direction,
+        questions: newState.questions || questions,
+        categoryName: sharedState?.categoryName || category?.name
+      };
+      
+      broadcastState(stateUpdate);
+      if (isHost) {
+        setSharedState(stateUpdate);
+      }
+    }
+  };
+
+  const currentCategoryName = roomId && sharedState ? sharedState.categoryName : category?.name;
+
+  if (!currentCategoryName || questions.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
         <p className="text-stone-500 mb-4">В этой категории пока нет вопросов.</p>
         <button 
-          onClick={() => setCurrentView('home')}
+          onClick={() => roomId ? leaveRoom() : setCurrentView('home')}
           className="px-6 py-3 bg-rose-500 text-white rounded-full hover:bg-rose-600 transition-colors"
         >
           Вернуться назад
@@ -38,6 +76,7 @@ export function Game() {
       setDirection(1);
       setCurrentIndex(prev => prev + 1);
       setIsFlipped(false);
+      syncState({ direction: 1, currentIndex: currentIndex + 1, isFlipped: false });
     }
   };
 
@@ -46,6 +85,7 @@ export function Game() {
       setDirection(-1);
       setCurrentIndex(prev => prev - 1);
       setIsFlipped(false);
+      syncState({ direction: -1, currentIndex: currentIndex - 1, isFlipped: false });
     }
   };
 
@@ -55,6 +95,13 @@ export function Game() {
     setCurrentIndex(0);
     setDirection(1);
     setIsFlipped(false);
+    syncState({ questions: shuffled, currentIndex: 0, direction: 1, isFlipped: false });
+  };
+
+  const handleFlip = () => {
+    const newFlipped = !isFlipped;
+    setIsFlipped(newFlipped);
+    syncState({ isFlipped: newFlipped });
   };
 
   const handleDragEnd = (event, info) => {
@@ -90,21 +137,21 @@ export function Game() {
   };
 
   return (
-    <div className="h-[100dvh] flex flex-col items-center p-4 relative overflow-hidden bg-stone-50/50">
+    <div className="h-[100dvh] flex flex-col items-center p-4 relative overflow-hidden">
       {/* Header section (fixed at top) */}
       <div className="w-full max-w-md flex items-center justify-center pt-2 pb-4 relative z-10 shrink-0 mt-2 sm:mt-6">
         <button 
-          onClick={() => setCurrentView('home')}
-          className="absolute left-0 p-3 text-stone-500 hover:bg-white hover:shadow-sm rounded-full transition-all flex items-center justify-center"
+          onClick={() => roomId ? leaveRoom() : setCurrentView('home')}
+          className="absolute left-0 p-3 text-stone-600 hover:text-stone-900 hover:bg-white/50 rounded-full transition-all flex items-center justify-center bg-white/30 backdrop-blur-sm shadow-sm"
           title="Назад"
         >
           <ArrowLeft size={24} />
         </button>
 
         <div className="text-center">
-          <h2 className="text-xl sm:text-2xl font-semibold text-stone-800 tracking-tight">{category.name}</h2>
+          <h2 className="text-xl sm:text-2xl font-semibold text-stone-800 tracking-tight">{currentCategoryName}</h2>
           <div className="flex items-center justify-center mt-1.5">
-            <div className="bg-stone-200/50 rounded-full px-3 py-0.5 text-xs font-medium text-stone-500">
+            <div className="bg-white/40 backdrop-blur-sm border border-white/40 rounded-full px-3 py-0.5 text-xs font-medium text-stone-700 shadow-sm">
                {currentIndex + 1} / {questions.length}
             </div>
           </div>
@@ -127,7 +174,7 @@ export function Game() {
               dragElastic={0.7}
               onDragEnd={handleDragEnd}
               className="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing"
-              onClick={() => setIsFlipped(!isFlipped)}
+              onClick={handleFlip}
               style={{ transformStyle: 'preserve-3d' }}
             >
               {/* Front of the card */}

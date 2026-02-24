@@ -1,9 +1,11 @@
 import { useAppContext } from '../context/AppContext';
+import { useMultiplayer } from '../context/MultiplayerContext';
 import { IconRenderer } from './IconRenderer';
-import { Settings } from 'lucide-react';
+import { Settings, Palette, Globe } from 'lucide-react';
 
 export function Home() {
   const { categories, setCurrentView, setActiveCategoryId } = useAppContext();
+  const { createRoom } = useMultiplayer();
 
   const handleCategoryClick = (id) => {
     setActiveCategoryId(id);
@@ -15,16 +17,37 @@ export function Home() {
       <div className="flex justify-between items-center mb-8 pt-4">
         <div>
           <h1 className="text-3xl font-bold text-stone-800 tracking-tight">DeepTalk</h1>
-          <p className="text-stone-500 mt-1">Темы для глубоких разговоров</p>
+          <p className="text-stone-600 font-medium mt-1">Темы для глубоких разговоров</p>
         </div>
-        <button 
-          onClick={() => setCurrentView('editor')}
-          className="p-3 text-stone-400 hover:text-stone-800 hover:bg-stone-200 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-rose-200"
-          title="Редактор"
-          aria-label="Редактор"
-        >
-          <Settings size={24} />
-        </button>
+        <div className="flex gap-2">
+          <button 
+            onClick={() => {
+              createRoom();
+              setCurrentView('lobby');
+            }}
+            className="p-3 text-rose-600 hover:text-rose-900 hover:bg-white/50 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-rose-200 bg-white/50 backdrop-blur-sm shadow-sm"
+            title="Играть онлайн"
+            aria-label="Играть онлайн"
+          >
+            <Globe size={24} />
+          </button>
+          <button 
+            onClick={() => setCurrentView('themes')}
+            className="p-3 text-stone-600 hover:text-stone-900 hover:bg-white/50 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-rose-200 bg-white/30 backdrop-blur-sm shadow-sm"
+            title="Оформление"
+            aria-label="Оформление"
+          >
+            <Palette size={24} />
+          </button>
+          <button 
+            onClick={() => setCurrentView('editor')}
+            className="p-3 text-stone-600 hover:text-stone-900 hover:bg-white/50 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-rose-200 bg-white/30 backdrop-blur-sm shadow-sm"
+            title="Редактор"
+            aria-label="Редактор"
+          >
+            <Settings size={24} />
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
@@ -36,7 +59,7 @@ export function Home() {
             <div 
               key={category.id}
               onClick={() => handleCategoryClick(category.id)}
-              className="bg-white rounded-3xl p-6 shadow-sm border border-stone-100 cursor-pointer hover:shadow-md hover:border-rose-200 transition-all duration-300 active:scale-[0.98] group flex flex-col justify-between min-h-[140px]"
+              className="bg-white/80 backdrop-blur-md rounded-3xl p-6 shadow-sm border border-white/40 cursor-pointer hover:shadow-md hover:border-rose-300 transition-all duration-300 active:scale-[0.98] group flex flex-col justify-between min-h-[140px]"
             >
               <div className="flex items-center space-x-4">
                 <div className="p-3 bg-rose-50 rounded-2xl text-rose-500 group-hover:bg-rose-100 group-hover:text-rose-600 transition-colors">
