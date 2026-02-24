@@ -2,14 +2,16 @@ import { useAppContext } from '../context/AppContext';
 import { useMultiplayer } from '../context/MultiplayerContext';
 import { IconRenderer } from './IconRenderer';
 import { Settings, Palette, Globe } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 export function Home() {
-  const { categories, setCurrentView, setActiveCategoryId } = useAppContext();
+  const { categories, setActiveCategoryId } = useAppContext();
   const { createRoom } = useMultiplayer();
+  const navigate = useNavigate();
 
   const handleCategoryClick = (id) => {
     setActiveCategoryId(id);
-    setCurrentView('game');
+    navigate('/game');
   };
 
   return (
@@ -23,7 +25,7 @@ export function Home() {
           <button 
             onClick={() => {
               createRoom();
-              setCurrentView('lobby');
+              navigate('/lobby');
             }}
             className="p-3 text-rose-600 hover:text-rose-900 hover:bg-white/50 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-rose-200 bg-white/50 backdrop-blur-sm shadow-sm"
             title="Играть онлайн"
@@ -32,7 +34,7 @@ export function Home() {
             <Globe size={24} />
           </button>
           <button 
-            onClick={() => setCurrentView('themes')}
+            onClick={() => navigate('/themes')}
             className="p-3 text-stone-600 hover:text-stone-900 hover:bg-white/50 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-rose-200 bg-white/30 backdrop-blur-sm shadow-sm"
             title="Оформление"
             aria-label="Оформление"
@@ -40,7 +42,7 @@ export function Home() {
             <Palette size={24} />
           </button>
           <button 
-            onClick={() => setCurrentView('editor')}
+            onClick={() => navigate('/editor')}
             className="p-3 text-stone-600 hover:text-stone-900 hover:bg-white/50 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-rose-200 bg-white/30 backdrop-blur-sm shadow-sm"
             title="Редактор"
             aria-label="Редактор"

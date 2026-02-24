@@ -2,15 +2,17 @@ import { useAppContext } from '../context/AppContext';
 import { themes } from '../data/themes';
 import { ArrowLeft, Check } from 'lucide-react';
 import { IconRenderer } from './IconRenderer';
+import { useNavigate } from 'react-router-dom';
 
 export function ThemeSelector() {
-  const { activeThemeId, setActiveThemeId, setCurrentView } = useAppContext();
+  const { activeThemeId, setActiveThemeId } = useAppContext();
+  const navigate = useNavigate();
 
   return (
     <div className="max-w-4xl mx-auto p-4 sm:p-6 pb-20 min-h-screen">
       <div className="flex items-center gap-4 mb-8 pt-4">
         <button 
-          onClick={() => setCurrentView('home')}
+          onClick={() => navigate('/')}
           className="p-3 text-stone-600 hover:text-stone-900 hover:bg-white/50 rounded-full transition-colors bg-white/30 backdrop-blur-sm shadow-sm"
         >
           <ArrowLeft size={24} />

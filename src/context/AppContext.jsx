@@ -6,13 +6,11 @@ const AppContext = createContext(null);
 
 export function AppProvider({ children }) {
   const [categories, setCategories] = useLocalStorage('deeptalk_categories', defaultCategories);
-  const [currentView, setCurrentView] = useLocalStorage('deeptalk_view', 'home');
   const [activeCategoryId, setActiveCategoryId] = useLocalStorage('deeptalk_active_category', null);
   const [activeThemeId, setActiveThemeId] = useLocalStorage('deeptalk_theme', 'default');
 
   const resetToDefault = () => {
     setCategories(defaultCategories);
-    setCurrentView('home');
     setActiveCategoryId(null);
     setActiveThemeId('default');
   };
@@ -21,8 +19,6 @@ export function AppProvider({ children }) {
     <AppContext.Provider value={{ 
       categories, 
       setCategories, 
-      currentView, 
-      setCurrentView, 
       activeCategoryId, 
       setActiveCategoryId,
       activeThemeId,

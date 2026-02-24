@@ -4,9 +4,11 @@ import { ArrowLeft, Trash2, Plus, RefreshCw, Sparkles, Loader2, Download, Upload
 import { v4 as uuidv4 } from 'uuid';
 import { IconRenderer } from './IconRenderer';
 import { GoogleGenAI } from '@google/genai';
+import { useNavigate } from 'react-router-dom';
 
 export function Editor() {
-  const { categories, setCategories, setCurrentView, resetToDefault } = useAppContext();
+  const { categories, setCategories, resetToDefault } = useAppContext();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(categories[0]?.id || null);
   const [newQuestionText, setNewQuestionText] = useState('');
   const [newCatName, setNewCatName] = useState('');
@@ -160,7 +162,7 @@ export function Editor() {
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8 pt-4">
         <div className="flex items-center gap-4">
           <button 
-            onClick={() => setCurrentView('home')}
+            onClick={() => navigate('/')}
             className="p-3 text-stone-600 hover:text-stone-900 hover:bg-white/50 rounded-full transition-colors bg-white/30 backdrop-blur-sm shadow-sm"
           >
             <ArrowLeft size={24} />

@@ -3,21 +3,23 @@ import { useAppContext } from '../context/AppContext';
 import { useMultiplayer } from '../context/MultiplayerContext';
 import { ArrowLeft, Copy, Check, Users, Loader2 } from 'lucide-react';
 import { IconRenderer } from './IconRenderer';
+import { useNavigate } from 'react-router-dom';
 
 export function Lobby() {
-  const { categories, setCurrentView, setActiveCategoryId } = useAppContext();
+  const { categories, setActiveCategoryId } = useAppContext();
   const { roomId, isHost, peerId, broadcastState, leaveRoom, sharedState, setSharedState } = useMultiplayer();
   const [copied, setCopied] = useState(false);
   const [selectedCatId, setSelectedCatId] = useState(null);
+  const navigate = useNavigate();
 
   const inviteLink = `${window.location.origin}${window.location.pathname}?room=${roomId}`;
 
   useEffect(() => {
     // Guest transitions to game when host sends START_GAME
     if (sharedState?.type === 'START_GAME') {
-      setCurrentView('game');
+      navigate('/game');
     }
-  }, [sharedState, setCurrentView]);
+  }, [sharedState, navigate]);
 
   const copyLink = () => {
     navigator.clipboard.writeText(inviteLink);
@@ -44,7 +46,7 @@ export function Lobby() {
     broadcastState(initialState);
     setSharedState(initialState);
 
-    setCurrentView('game');
+    navigate('/game');
   };
 
   return (

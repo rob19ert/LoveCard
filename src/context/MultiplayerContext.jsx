@@ -11,6 +11,10 @@ export function MultiplayerProvider({ children }) {
   
   const [sharedState, setSharedState] = useState(null);
   const [sendUpdateFn, setSendUpdateFn] = useState(null);
+  
+  const [chatMessages, setChatMessages] = useState([]);
+  const [sendChatFn, setSendChatFn] = useState(null);
+
   const roomRef = useRef(null);
 
   const connectToRoom = useCallback((id, host = false) => {
@@ -25,6 +29,7 @@ export function MultiplayerProvider({ children }) {
     setIsHost(host);
     setPeerId(null);
     setSharedState(null);
+    setChatMessages([]);
     
     newRoom.onPeerJoin((id) => {
       console.log('Peer joined', id);
@@ -41,6 +46,13 @@ export function MultiplayerProvider({ children }) {
     
     getUpdate((data, peerId) => {
       setSharedState(data);
+    });
+
+    const [sendChat, getChat] = newRoom.makeAction('chat');
+    setSendChatFn(() => sendChat);
+
+    getChat((data, peerId) => {
+      setChatMessages(prev => [...prev, { ...data, sender: 'peer' }]);
     });
   }, []);
 
@@ -91,6 +103,14 @@ export function MultiplayerProvider({ children }) {
     }
   }, [sendUpdateFn]);
 
+  const sendChatMessage = useCallback((text, questionId) => {
+    const msg = { text, questionId, timestamp: Date.now() };
+    if (sendChatFn) {
+      sendChatFn(msg);
+    }
+    setChatMessages(prev => [...prev, { ...msg, sender: 'me' }]);
+  }, [sendChatFn]);
+
   return (
     <MultiplayerContext.Provider value={{
       roomId,
@@ -100,7 +120,10 @@ export function MultiplayerProvider({ children }) {
       createRoom,
       leaveRoom,
       broadcastState,
-      setSharedState
+      setSharedState,
+      chatMessages,
+      sendChatMessage,
+      setChatMessages
     }}>
       {children}
     </MultiplayerContext.Provider>
